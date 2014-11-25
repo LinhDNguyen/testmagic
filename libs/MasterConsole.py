@@ -29,30 +29,25 @@ class MasterConsole(xmlrpc.XMLRPC):
         self._tpm = None
 
     def xmlrpc_ping(self, **kargs):
-        """
-        Get list of available test plans
-        """
+        '''Ping to the server'''
         pass
 
-    def xmlrpc_run_test_case(self, info={}):
-        print info
-        print self._info
-        return (True,)
-
-    def xmlrpc_hello(self):
-        print("HELLO FROM MASTER CONSOLE!!!")
-        from testmagic.models import Family
-        families = Family.objects.using('test').all()
-        print(families)
-        return True
-
-    def xmlrpc_test_db(self):
-        '''Use test plan manager to get all test plan.'''
+    def xmlrpc_create_plan(self, info={}):
+        '''Use test plan manager to create test plan.'''
         from libs.TestPlanManager import TestPlanManager
         if self._tpm is None:
-            self._tpm = TestPlanManager()
-            self._tpm.scan(self._info['srv_db_path'])
+            self._tpm = TestPlanManager(self._info['srv_db_orig_path'], self._info['srv_db_path'])
+            self._tpm.scan()
+        # Create new test plan
+        try:
+            self._tpm.createPlan(planCode=info['code'], planName=info['name'],
+                                 sameDbWith=info['sameWith'], description=info['desc'],
+                                 mailList=info['maillist'], specificConfig=info['specificConfig'])
+        except Exception as ex:
+            print(traceback.format_exc())
+            return False
         print('*' * 80)
+        self._tpm.scan()
         print(self._tpm._plan_list)
         print('*' * 80)
         return True
@@ -61,8 +56,8 @@ class MasterConsole(xmlrpc.XMLRPC):
         '''Use test plan manager to get all test plan.'''
         from libs.TestPlanManager import TestPlanManager
         if self._tpm is None:
-            self._tpm = TestPlanManager()
-            self._tpm.scan(self._info['srv_db_path'])
+            self._tpm = TestPlanManager(self._info['srv_db_orig_path'], self._info['srv_db_path'])
+            self._tpm.scan()
         result = {}
         for tplan in self._tpm._plan_list:
             arr = [tplan.tp_name, tplan.tp_codename, tplan.tp_status, tplan.tp_desc, tplan.tp_specific_config]

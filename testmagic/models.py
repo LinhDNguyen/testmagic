@@ -141,6 +141,18 @@ class TestGroup(models.Model):
         return str(self.tg_name)
 
 
+class TestCaseGroup(object):
+    """Group of test case"""
+
+    def __init__(self, test_cases=[], test_group=None):
+        """Constructor for TestCaseGroup"""
+        self._test_cases = test_cases
+        self._test_group = test_group
+        self._group_id = None
+        self._case_ids = []
+        self._run_count = 0
+
+
 class TestPlan(models.Model):
     tp_id = models.IntegerField(primary_key=True)
     tp_name = models.TextField()
@@ -149,10 +161,24 @@ class TestPlan(models.Model):
     tp_desc = models.TextField(blank=True)
     tp_mail_list = models.TextField(blank=True)
     tp_specific_config = models.TextField(blank=True)
-    tp_connection_name = ''
+    _connection_name = ''
+    _registered_slave = []
+    _schedule = []
+    _threads = []
+    _threads_run = {}
+    _lock = None
 
     def __str__(self):
         return str(self.tp_name)
+
+    def loadSchedule(self):
+        '''Load all test group into schedule array'''
+        for plangroup in self.plangroups:
+            group = TestCaseGroup()
+            group._group_id = plangroup.id
+            for tc in plangroup.testgroup.test_case_groups:
+                group._case_ids.append(tc.tc_id)
+            self._schedule.append(group)            
 
 
 class Session(models.Model):
@@ -185,8 +211,8 @@ class TestResult(models.Model):
 
 
 class TestPlanGroup(models.Model):
-    test_plan = models.ForeignKey(TestPlan)
-    test_group = models.ForeignKey(TestGroup)
+    test_plan = models.ForeignKey(TestPlan, related_name='plangroups')
+    test_group = models.ForeignKey(TestGroup, related_name='plangroups')
     tpg_order = models.IntegerField()
     tpg_depends = models.TextField(blank=True)
 

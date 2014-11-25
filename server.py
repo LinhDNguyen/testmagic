@@ -1,4 +1,3 @@
-
 import sys
 import os
 
@@ -16,7 +15,7 @@ import twresource
 import logging
 logging.basicConfig()
 
-PORT = 8000
+PORT = 8888
 
 class ThreadPoolService(service.Service):
     def __init__(self, pool):
@@ -57,7 +56,8 @@ root.putChild("media", mediasrc)
 root.putChild("static", staticsrc)
 
 mstrConInfo = {
-    'srv_db_path': os.path.join(_ROOT_DIR_, 'dbs')
+    'srv_db_path': os.path.join(_ROOT_DIR_, 'dbs'),
+    'srv_db_orig_path': os.path.join(_ROOT_DIR_, 'newdb.sqlite3'),
 }
 
 r = MasterConsole(info=mstrConInfo)
