@@ -1,0 +1,37 @@
+# Initial data for model
+
+- model: testmagic.Family
+  pk: 1
+  fields:
+    f_name: Kinetis
+
+- model: testmagic.Family
+  pk: 2
+  fields:
+    f_name: PowerPC
+
+- model: testmagic.Family
+  pk: 3
+  fields:
+    f_name: Vybrid
+
+- model: testmagic.Board
+  pk: 1
+  fields:
+    b_name: TWR-K64F120M
+    b_state: 0
+    family_id: 1
+
+- model: testmagic.Board
+  pk: 2
+  fields:
+    b_name: TWR-K22F120M
+    b_state: 0
+    family_id: 1
+
+- model: testmagic.Board
+  pk: 3
+  fields:
+    b_name: FRDM-KL46Z48M
+    b_state: 0
+    family_id: 1
