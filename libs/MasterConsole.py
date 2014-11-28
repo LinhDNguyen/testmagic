@@ -63,4 +63,18 @@ class MasterConsole(xmlrpc.XMLRPC):
             arr = [tplan.tp_name, tplan.tp_codename, tplan.tp_status, tplan.tp_desc, tplan.tp_specific_config]
             result[tplan.tp_codename] = arr
         return result
- 
+
+    def xmlrpc_new_test_case(self, planCode='', info={}):
+        '''Insert/update the test case into database'''
+        if not planCode:
+            return False
+        from libs.TestPlanManager import TestPlanManager
+        if self._tpm is None:
+            self._tpm = TestPlanManager(self._info['srv_db_orig_path'], self._info['srv_db_path'])
+            self._tpm.scan()
+        try:
+            self._tpm.createCase(planCode, info)
+        except Exception as ex:
+            print(traceback.format_exc())
+            return False
+        return True

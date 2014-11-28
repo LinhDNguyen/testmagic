@@ -15,7 +15,7 @@ from django.db import models
 class Compiler(models.Model):
     ''' This class is object representation of Compiler table.
     '''
-    c_id = models.IntegerField(primary_key=True)
+    c_id = models.AutoField(primary_key=True)
     c_name = models.TextField()
     c_note = models.TextField(blank=True)
     c_codename = models.TextField(blank=True)
@@ -25,7 +25,7 @@ class Compiler(models.Model):
 
 
 class Computer(models.Model):
-    cp_id = models.IntegerField(primary_key=True)
+    cp_id = models.AutoField(primary_key=True)
     cp_name = models.TextField()
     cp_uri = models.TextField()
     cp_source_dir = models.TextField(blank=True)
@@ -43,7 +43,7 @@ class Computer(models.Model):
 
 
 class Debugger(models.Model):
-    d_id = models.IntegerField(primary_key=True)
+    d_id = models.AutoField(primary_key=True)
     d_name = models.TextField()
     d_note = models.TextField(blank=True)
 
@@ -52,7 +52,7 @@ class Debugger(models.Model):
 
 
 class Family(models.Model):
-    f_id = models.IntegerField(primary_key=True)
+    f_id = models.AutoField(primary_key=True)
     f_name = models.TextField()
 
     def __str__(self):
@@ -60,7 +60,7 @@ class Family(models.Model):
 
 
 class Board(models.Model):
-    b_id = models.IntegerField(primary_key=True)
+    b_id = models.AutoField(primary_key=True)
     b_name = models.TextField()
     b_note = models.TextField(blank=True)
     b_state = models.IntegerField()
@@ -71,7 +71,7 @@ class Board(models.Model):
 
 
 class Target(models.Model):
-    t_id = models.IntegerField(primary_key=True)
+    t_id = models.AutoField(primary_key=True)
     t_name = models.TextField()
     t_type = models.IntegerField()
     t_full_name = models.TextField(blank=True)
@@ -81,7 +81,7 @@ class Target(models.Model):
 
 
 class ComputerCompiler(models.Model):
-    cc_id = models.IntegerField(primary_key=True)
+    cc_id = models.AutoField(primary_key=True)
     computer = models.ForeignKey(Computer, related_name='computer_compilers')
     compiler = models.ForeignKey(Compiler, related_name='computer_compilers')
     cc_compiler_path = models.TextField(blank=True)
@@ -91,7 +91,7 @@ class ComputerCompiler(models.Model):
 
 
 class Project(models.Model):
-    p_id = models.IntegerField(primary_key=True)
+    p_id = models.AutoField(primary_key=True)
     p_name = models.TextField()
     p_path = models.TextField()
     p_is_lib = models.IntegerField()
@@ -107,7 +107,7 @@ class Project(models.Model):
 
 
 class ProjectTarget(models.Model):
-    pt_id = models.IntegerField(primary_key=True)
+    pt_id = models.AutoField(primary_key=True)
     pt_state = models.IntegerField()
     target = models.ForeignKey(Target, related_name='project_targets')
     project = models.ForeignKey(Project, related_name='project_targets')
@@ -117,7 +117,7 @@ class ProjectTarget(models.Model):
 
 
 class TestCase(models.Model):
-    tc_id = models.IntegerField(primary_key=True)
+    tc_id = models.AutoField(primary_key=True)
     tc_is_active = models.IntegerField()
     tc_type = models.IntegerField(blank=True, null=True)
     tc_specific_configs = models.TextField(blank=True)
@@ -133,7 +133,7 @@ class TestCase(models.Model):
 
 
 class TestGroup(models.Model):
-    tg_id = models.IntegerField(primary_key=True)
+    tg_id = models.AutoField(primary_key=True)
     tg_name = models.TextField()
     tg_specific_configs = models.TextField(blank=True)
 
@@ -154,7 +154,7 @@ class TestCaseGroup(object):
 
 
 class TestPlan(models.Model):
-    tp_id = models.IntegerField(primary_key=True)
+    tp_id = models.AutoField(primary_key=True)
     tp_name = models.TextField()
     tp_codename = models.TextField()
     tp_status = models.IntegerField()
@@ -182,7 +182,7 @@ class TestPlan(models.Model):
 
 
 class Session(models.Model):
-    s_id = models.IntegerField(primary_key=True)
+    s_id = models.AutoField(primary_key=True)
     s_name = models.TextField()
     s_start = models.TextField()  # This field type is a guess.
     s_note = models.TextField(blank=True)
@@ -201,7 +201,7 @@ class TestCaseInGroup(models.Model):
 
 
 class TestResult(models.Model):
-    tr_id = models.IntegerField(primary_key=True)
+    tr_id = models.AutoField(primary_key=True)
     tr_status = models.IntegerField()
     tr_start = models.TextField(blank=True)
     tr_end = models.TextField(blank=True)
@@ -218,7 +218,7 @@ class TestPlanGroup(models.Model):
 
 
 class Log(models.Model):
-    l_id = models.IntegerField(primary_key=True)
+    l_id = models.AutoField(primary_key=True)
     l_type = models.IntegerField(blank=False, default=0)
     l_content = models.TextField(blank=False)
     test_result = models.ForeignKey(TestResult, related_name='logs')

@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Board',
             fields=[
-                ('b_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('b_id', models.AutoField(serialize=False, primary_key=True)),
                 ('b_name', models.TextField()),
                 ('b_note', models.TextField(blank=True)),
                 ('b_state', models.IntegerField()),
@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Compiler',
             fields=[
-                ('c_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('c_id', models.AutoField(serialize=False, primary_key=True)),
                 ('c_name', models.TextField()),
                 ('c_note', models.TextField(blank=True)),
                 ('c_codename', models.TextField(blank=True)),
@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Computer',
             fields=[
-                ('cp_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('cp_id', models.AutoField(serialize=False, primary_key=True)),
                 ('cp_name', models.TextField()),
                 ('cp_uri', models.TextField()),
                 ('cp_source_dir', models.TextField(blank=True)),
@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ComputerCompiler',
             fields=[
-                ('cc_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('cc_id', models.AutoField(serialize=False, primary_key=True)),
                 ('cc_compiler_path', models.TextField(blank=True)),
                 ('compiler', models.ForeignKey(related_name='computer_compilers', to='testmagic.Compiler')),
                 ('computer', models.ForeignKey(related_name='computer_compilers', to='testmagic.Computer')),
@@ -68,7 +68,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Debugger',
             fields=[
-                ('d_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('d_id', models.AutoField(serialize=False, primary_key=True)),
                 ('d_name', models.TextField()),
                 ('d_note', models.TextField(blank=True)),
             ],
@@ -79,7 +79,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Family',
             fields=[
-                ('f_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('f_id', models.AutoField(serialize=False, primary_key=True)),
                 ('f_name', models.TextField()),
             ],
             options={
@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Log',
             fields=[
-                ('l_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('l_id', models.AutoField(serialize=False, primary_key=True)),
                 ('l_type', models.IntegerField(default=0)),
                 ('l_content', models.TextField()),
             ],
@@ -100,7 +100,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Project',
             fields=[
-                ('p_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('p_id', models.AutoField(serialize=False, primary_key=True)),
                 ('p_name', models.TextField()),
                 ('p_path', models.TextField()),
                 ('p_is_lib', models.IntegerField()),
@@ -118,7 +118,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ProjectTarget',
             fields=[
-                ('pt_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('pt_id', models.AutoField(serialize=False, primary_key=True)),
                 ('pt_state', models.IntegerField()),
                 ('project', models.ForeignKey(related_name='project_targets', to='testmagic.Project')),
             ],
@@ -129,7 +129,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Session',
             fields=[
-                ('s_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('s_id', models.AutoField(serialize=False, primary_key=True)),
                 ('s_name', models.TextField()),
                 ('s_start', models.TextField()),
                 ('s_note', models.TextField(blank=True)),
@@ -142,7 +142,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Target',
             fields=[
-                ('t_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('t_id', models.AutoField(serialize=False, primary_key=True)),
                 ('t_name', models.TextField()),
                 ('t_type', models.IntegerField()),
                 ('t_full_name', models.TextField(blank=True)),
@@ -154,7 +154,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TestCase',
             fields=[
-                ('tc_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('tc_id', models.AutoField(serialize=False, primary_key=True)),
                 ('tc_is_active', models.IntegerField()),
                 ('tc_type', models.IntegerField(null=True, blank=True)),
                 ('tc_specific_configs', models.TextField(blank=True)),
@@ -184,7 +184,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TestGroup',
             fields=[
-                ('tg_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('tg_id', models.AutoField(serialize=False, primary_key=True)),
                 ('tg_name', models.TextField()),
                 ('tg_specific_configs', models.TextField(blank=True)),
             ],
@@ -195,7 +195,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TestPlan',
             fields=[
-                ('tp_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('tp_id', models.AutoField(serialize=False, primary_key=True)),
                 ('tp_name', models.TextField()),
                 ('tp_codename', models.TextField()),
                 ('tp_status', models.IntegerField()),
@@ -213,8 +213,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('tpg_order', models.IntegerField()),
                 ('tpg_depends', models.TextField(blank=True)),
-                ('test_group', models.ForeignKey(to='testmagic.TestGroup')),
-                ('test_plan', models.ForeignKey(to='testmagic.TestPlan')),
+                ('test_group', models.ForeignKey(related_name='plangroups', to='testmagic.TestGroup')),
+                ('test_plan', models.ForeignKey(related_name='plangroups', to='testmagic.TestPlan')),
             ],
             options={
             },
@@ -223,7 +223,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TestResult',
             fields=[
-                ('tr_id', models.IntegerField(serialize=False, primary_key=True)),
+                ('tr_id', models.AutoField(serialize=False, primary_key=True)),
                 ('tr_status', models.IntegerField()),
                 ('tr_start', models.TextField(blank=True)),
                 ('tr_end', models.TextField(blank=True)),

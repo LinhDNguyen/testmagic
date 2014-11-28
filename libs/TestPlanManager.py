@@ -1,6 +1,5 @@
 import os
 import shutil
-from testmagic.models import *
 from django.conf import settings
 
 
@@ -14,6 +13,7 @@ class TestPlanManager(object):
     def scan(self):
         '''This function will scan the path to detect all database and testplans in these databases.
         Each database will be added into database connection dictionary.'''
+        from testmagic.models import TestPlan
         # Clean test plan list
         self._plan_list = []
         # Clean database settings
@@ -47,9 +47,13 @@ class TestPlanManager(object):
             for plan in plans:
                 plan._connection_name = dbname
                 self._plan_list.append(plan)
+        # Re-setup the django system
+        import django
+        django.setup()
 
     def createPlan(self, planCode, planName, sameDbWith='', description='', mailList='', specificConfig=''):
         '''This function will create new test plan then add it into the list'''
+        from testmagic.models import TestPlan
         # Check test plan code exists
         if self.getTestPlan(planCode) is not None:
             raise Exception("Test plan with code %s already existed." % planCode)
@@ -98,3 +102,86 @@ class TestPlanManager(object):
             if plan.tp_codename == plan_code:
                 return plan
         return None
+
+    def createCase(self, planCode='', info={}):
+        if not planCode:
+            raise Exception("Plan code must not be empty.")
+        if planCode not in settings.DATABASES.keys():
+            raise Exception("Plan code %s is not configured in database settings.")
+        from testmagic.models import Family, Board, Compiler, Project, Target, ProjectTarget
+        # insert/update test case
+        f_name = info['f_name']
+        b_name = info['b_name']
+        p_name = info['p_name']
+        p_path = info['p_path']
+        p_is_lib = int(info['p_is_lib'])
+        p_is_active = int(info['p_is_active'])
+        p_is_automate = int(info['p_is_automate'])
+        p_timeout = int(info['p_timeout'])
+        p_timedelay = int(info['p_timedelay'])
+        t_name = info['t_name']
+        t_type = p_is_lib
+        t_full_name = info['t_full_name']
+        d_name = info['d_name']
+        c_codename = info['c_name']
+        c_name = c_codename
+        
+        # Check family
+        familyq = Family.objects.using(planCode).filter(f_name=f_name)
+        if familyq.count() == 1:
+            family = familyq.get()
+        elif familyq.count() > 1:
+            family = familyq.all()[0]
+        else:
+            family = Family(f_name=f_name)
+            family.save(using=planCode)
+        
+        # Check board
+        boardq = Board.objects.using(planCode).filter(b_name=b_name)
+        if boardq.count() == 1:
+            board = boardq.get()
+        elif boardq.count() > 1:
+            board = boardq.all()[0]
+        else:
+            board = Board(b_name=b_name, b_note='', b_state=1, family=family)
+            board.save(using=planCode)
+
+        # Check compiler
+        compilerq = Compiler.objects.using(planCode).filter(c_codename=c_codename)
+        if compilerq.count() == 1:
+            compiler = compilerq.get()
+        elif compilerq.count() > 1:
+            compiler = compilerq.all()[0]
+        else:
+            compiler = Compiler(c_name=c_name, c_codename=c_codename, c_note='')
+            compiler.save(using=planCode)
+        
+        # Check target
+        targetq = Target.objects.using(planCode).filter(t_name=t_name)
+        if targetq.count() == 1:
+            target = targetq.get()
+        elif targetq.count() > 1:
+            target = targetq.all()[0]
+        else:
+            target = Target(t_name=t_name, t_type=t_type, t_full_name=t_full_name)
+            target.save(using=planCode)
+
+        # Check Project
+        projectq = Project.objects.using(planCode).filter(p_path=p_path, p_name=p_name)
+        if projectq.count() == 1:
+            project = projectq.get()
+        elif projectq.count() > 1:
+            project = projectq.all()[0]
+        else:
+            project = Project(p_name=p_name, p_path=p_path, p_is_lib=p_is_lib, p_is_active=p_is_active,
+                              p_is_automate=p_is_automate, p_timeout=p_timeout, p_timedelay=p_timedelay,
+                              board=board, compiler=compiler)
+            project.save(using=planCode)
+        
+        # Check project target
+        ptq = ProjectTarget.objects.using(planCode).filter(project=project, target=target)
+        if ptq.count() == 0:
+            pt = ProjectTarget(project=project, target=target, pt_state=1)
+            pt.save(using=planCode)
+
+        return True
