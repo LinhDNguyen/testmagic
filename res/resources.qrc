@@ -1,0 +1,23 @@
+<RCC>
+    <qresource>
+        <file>images/about.png</file>
+        <file>images/copy.png</file>
+        <file>images/cut.png</file>
+        <file>images/delete.png</file>
+        <file>images/new.png</file>
+        <file>images/new_case.png</file>
+        <file>images/new_dummy.png</file>
+        <file>images/new_from_group.png</file>
+        <file>images/open.png</file>
+        <file>images/reload.png</file>
+        <file>images/save.png</file>
+        <file>images/exit.png</file>
+        <file>images/group.png</file>
+        <file>images/save_as.png</file>
+        <file>images/search_test_case.png</file>
+        <file>images/move_test_case.png</file>
+        <file>images/copy_test_case.png</file>
+        <file>images/paste_test_case.png</file>
+        <file>images/appicon.png</file>
+    </qresource>
+</RCC>
