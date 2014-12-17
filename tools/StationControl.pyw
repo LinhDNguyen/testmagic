@@ -30,6 +30,7 @@ class Station(object):
             return self._uri
 
 class StationSelectorGroup(QtGui.QGroupBox):
+    NROW = 6
     def __init__(self, title='', stations=[], parent=None):
         super(StationSelectorGroup, self).__init__(title, parent)
         self._stations = stations
@@ -38,10 +39,10 @@ class StationSelectorGroup(QtGui.QGroupBox):
         self.initUI()
 
     def initUI(self):
-        self.vbox = QtGui.QVBoxLayout()
+        self.gridLayout = QtGui.QGridLayout()
         self.createStations()
 
-        self.setLayout(self.vbox)
+        self.setLayout(self.gridLayout)
     def getSelectedStations(self):
         res = []
         for ck in self._ckStations:
@@ -57,20 +58,28 @@ class StationSelectorGroup(QtGui.QGroupBox):
         return res
     def updateStations(self, stations=[]):
         for ck in self._ckStations:
-            self.vbox.removeWidget(ck)
+            self.gridLayout.removeWidget(ck)
             ck.deleteLater()
         self._ckStations = []
         self._stations = stations
         self.createStations()
 
     def createStations(self):
+        crow = 0
+        ccol = 0
         for station in self._stations:
             s = station._uri
             if station._name:
                 s = station._name
             ck = QtGui.QCheckBox(s)
             self._ckStations.append(ck)
-            self.vbox.addWidget(ck)
+
+            self.gridLayout.addWidget(ck, crow, ccol)
+
+            crow += 1
+            if crow >= StationSelectorGroup.NROW:
+                crow = 0
+                ccol += 1
 
     def checkSelected(self):
         selected = self.getSelectedStations()
