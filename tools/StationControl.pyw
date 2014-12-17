@@ -4,6 +4,7 @@ import os
 import re
 import xml.dom.minidom
 import xmlrpclib
+import httplib
 import threading
 import time
 import traceback
@@ -87,11 +88,45 @@ class ConfigWidget(QtGui.QWidget):
 
         # Create configure items
         self.ckIsShell = QtGui.QCheckBox("&Is shell")
-        mainLayout.addWidget(self.ckIsShell, 0, 0, 1, 3)
+
+        lbActiveDir = QtGui.QLabel("Active &directory")
+        self.txtActiveDir = QtGui.QLineEdit()
+        lbActiveDir.setBuddy(self.txtActiveDir)
+
+        lbTimeout = QtGui.QLabel("&Time out")
+        self.txtTimeout = QtGui.QLineEdit()
+        self.txtTimeout.setText('100')
+        self.txtTimeout.setInputMask("90000")
+        self.txtTimeout.setFixedWidth(80)
+        lbTimeout.setBuddy(self.txtTimeout)
+
+        lbOutput = QtGui.QLabel("Out&put")
+        self.txtOutput = QtGui.QLineEdit()
+        lbOutput.setBuddy(self.txtOutput)
+
+        lbError = QtGui.QLabel("&Error")
+        self.txtError = QtGui.QLineEdit()
+        lbError.setBuddy(self.txtError)
+
 
         self.btnRefreshStation = QtGui.QPushButton("Re&fresh station")
         self.btnRefreshStation.setDefault(False)
-        mainLayout.addWidget(self.btnRefreshStation, 1, 0)
+
+        mainLayout.addWidget(self.ckIsShell,        0, 1, 1, 1)
+
+        mainLayout.addWidget(lbActiveDir,           1, 0, 1, 1)
+        mainLayout.addWidget(self.txtActiveDir,     1, 1, 1, 1)
+
+        mainLayout.addWidget(lbTimeout,             2, 0, 1, 1)
+        mainLayout.addWidget(self.txtTimeout,       2, 1, 1, 1)
+
+        mainLayout.addWidget(lbOutput,              3, 0, 1, 1)
+        mainLayout.addWidget(self.txtOutput,        3, 1, 1, 1)
+
+        mainLayout.addWidget(lbError,               4, 0, 1, 1)
+        mainLayout.addWidget(self.txtError,         4, 1, 1, 1)
+
+        mainLayout.addWidget(self.btnRefreshStation, 5, 0)
 
         self.setLayout(mainLayout)
 
@@ -99,6 +134,16 @@ class ConfigWidget(QtGui.QWidget):
         res = {}
 
         res['isshell'] = self.ckIsShell.isChecked()
+        res['timeout'] = int(self.txtTimeout.text().strip())
+        tmp = self.txtActiveDir.text().strip()
+        if len(tmp):
+            res['active_dir'] = tmp
+        tmp = self.txtOutput.text().strip()
+        if len(tmp):
+            res['output'] = tmp
+        tmp = self.txtError.text().strip()
+        if len(tmp):
+            res['error'] = tmp
 
         return res
 
@@ -122,42 +167,61 @@ class StationControlWidget(QtGui.QWidget):
 
         self.txtCommand = QtGui.QLineEdit()
         self.btnRun = QtGui.QPushButton("&Run")
-        self.btnRun.setFixedWidth(40)
+        self.btnRun.setFixedWidth(80)
         self.btnRun.setDefault(True)
-        self.btnClear = QtGui.QPushButton("C&lear")
-        self.btnClear.setFixedWidth(40)
+        self.btnClear = QtGui.QPushButton("Clear lo&g")
+        self.btnClear.setFixedWidth(80)
         self.btnClear.setDefault(False)
+        self.btnGetAsync = QtGui.QPushButton("&Async status")
+        self.btnGetAsync.setFixedWidth(80)
+        self.btnGetAsync.setDefault(False)
+        self.btnClose = QtGui.QPushButton("Cl&ose")
+        self.btnClose.setFixedWidth(80)
+        self.btnClose.setDefault(False)
         lbCommand = QtGui.QLabel("&Command")
         lbCommand.setFixedHeight(15)
         lbCommand.setBuddy(self.txtCommand)
-        mainLayout.addWidget(lbCommand, 11, 0, 1, 9)
+        mainLayout.addWidget(lbCommand, 11, 0, 1, 7)
+        mainLayout.addWidget(self.btnClose, 11, 7)
+        mainLayout.addWidget(self.btnGetAsync, 11, 8)
         mainLayout.addWidget(self.btnClear, 11, 9)
         mainLayout.addWidget(self.txtCommand, 12, 0, 1, 9)  # 1 row, 4 cols
         mainLayout.addWidget(self.btnRun, 12, 9)            # 1 row, 1 col
 
         self.setLayout(mainLayout)
 
-class MainWindow(QtGui.QDialog):
+class MainWindow(QtGui.QMainWindow):
     TITLE = "Automation station controller"
     def __init__(self):
         super(MainWindow, self).__init__()
+        self.setWindowIcon(QtGui.QIcon(':/images/appicon.png'))
+        self.setUnifiedTitleAndToolBarOnMac(True)
+        self.setWindowTitle(MainWindow.TITLE)
+        self.createUI()
+        self.showMaximized()
+
+    def createUI(self):
+        self.mainWidget = MyStationControl()
+        self.setCentralWidget(self.mainWidget)
+        self.mainWidget.widgetStationControl.btnClose.released.connect(self.close)
+
+class MyStationControl(QtGui.QWidget):
+    def __init__(self):
+        super(MyStationControl, self).__init__()
         self._failCount = 0
         self._threadlock = threading.Lock()
-        self.setWindowIcon(QtGui.QIcon(':/images/appicon.png'))
-        # self.setUnifiedTitleAndToolBarOnMac(True)
-        self.setWindowTitle(MainWindow.TITLE)
+
 
         self.configs = self.parseConfigs(os.path.join(APP_DIR, 'configs.xml'))
         self.activeStations = []
 
-        self.checkActiveStations()
-
         self.createUI()
+
+        self.refreshStations()
+
         self.widgetConfigs.btnRefreshStation.setDefault(False)
         self.widgetStationControl.btnClear.setDefault(False)
         self.widgetStationControl.btnRun.setDefault(True)
-
-        self.showMaximized()
 
     def createUI(self):
         mainLayout = QtGui.QVBoxLayout()
@@ -179,13 +243,13 @@ class MainWindow(QtGui.QDialog):
         self.setLayout(mainLayout)
         self.setMinimumHeight(600)
         self.setMinimumWidth(800)
-        self.setModal(True)
 
         # Connect signals to slots
         self.widgetStationControl.btnRun.released.connect(self.runHandler)
         self.widgetConfigs.btnRefreshStation.released.connect(self.refreshStations)
         self.widgetStationControl.btnClear.released.connect(self.clearLog)
-        # self.widgetStationControl.txtCommand.returnPressed.connect(self.onCommandPressed)
+        self.widgetStationControl.txtCommand.returnPressed.connect(self.runHandler)
+        self.widgetStationControl.btnGetAsync.released.connect(self.getAsyncStatus)
 
     def test(self):
         print "TEST"
@@ -213,10 +277,18 @@ class MainWindow(QtGui.QDialog):
                 cmd.append(txt)
         info = {
             'command': cmd,
-            'timeout': 100,
         }
         info.update(self.widgetConfigs.getConfig())
         self.runCommand(selectedStations, info)
+
+    def logError(self, content=''):
+        s = "<br /><div id='OutputLog' style='color:red'>%s</div>" % content.replace('\n', "<br />")
+
+        # Append to text edit
+        self.widgetStationControl.txtLog.insertHtml(s)
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
 
     def log(self, station=None, content='', type=0):
         s = "<br /><div id='LogTitle' style='color:blue'>=============%s=============</div>" % str(station)
@@ -227,6 +299,58 @@ class MainWindow(QtGui.QDialog):
         # c = self.widgetStationControl.txtLog.textCursor();
         # c.movePosition(QtGui.QTextCursor.End);
         # self.widgetStationControl.txtLog.setTextCursor(c);
+
+    def getAsync(self, station=None):
+        # Wait for station IDLE
+        rpc = station._rpc
+        uri = station._uri
+
+        try:
+            if rpc.get_status() != 0:
+                time.sleep(1)
+            ret, out = rpc.get_async_status()
+            s = ''
+            if ret:
+                s += "<div style='color: green'>==RET: %s</div><br />" % str(ret)
+            else:
+                s += "<div style='color: red'>==RET: %s</div><br />" % str(ret)
+                self._failCount += 1
+            s += "<div>==OUT: %s</div>" % out
+            self._threadlock.acquire(True)
+            self.log(station, s)
+            self._threadlock.release()
+        except:
+            s = "Station: %s\n" % station._uri
+            s += traceback.format_exc()
+            self.logError(s)
+            return
+
+    def getAsyncStatus(self):
+        threads = []
+        self._failCount = 0
+        selectedStations = self.widgetStationSelect.getSelectedStations()
+        if len(selectedStations) == 0:
+            return
+        s = "<br />Get async status"
+        # Append to text edit
+        self.widgetStationControl.txtLog.insertHtml(s)
+        for station in selectedStations:
+            thread = threading.Thread(target=self.getAsync, args=(station,))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # Summary
+        s = "<br /><div style='color:green'> ALL PASSED </div>"
+        if self._failCount:
+            s = "<br /><div style='color:red'> %d FAILED </div>" % self._failCount
+        s += "<br /><br />"
+        # Append to text edit
+        self.widgetStationControl.txtLog.insertHtml(s)
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
 
     def runCMD(self, station=None, info={}, timeout=100):
         # Wait for station IDLE
@@ -250,8 +374,9 @@ class MainWindow(QtGui.QDialog):
             self.log(station, s)
             self._threadlock.release()
         except:
-            s = traceback.format_exc()
-            print s
+            s = "Station: %s\n" % str(station)
+            s += traceback.format_exc()
+            self.logError(s)
             return
 
     def runCommand(self, stations=[], info={}, timeout=100):
@@ -302,15 +427,17 @@ class MainWindow(QtGui.QDialog):
                 nc = needCheck[j-1]
                 if nc['uri'] == s._uri:
                     needCheck.remove(nc)
-            try:
-                s._rpc.ping()
-            except:
+            if not self.checkPing(s._uri):
+                self.logError("Station: %s not available.\n" % s._uri)
                 del(self.activeStations[i - 1])
         # Check other station
         for i in needCheck:
             if not re.match(r'^\d+(\.\d+){3}\:\d+$', i['uri'], re.I | re.M):
                 continue
             # Create rpc connection
+            if not self.checkPing(i['uri']):
+                self.logError("Station: %s not available.\n" % i['uri'])
+                continue
             try:
                 rpc = xmlrpclib.Server('http://%s/' % str(i['uri']))
                 rpc.ping()
@@ -322,6 +449,16 @@ class MainWindow(QtGui.QDialog):
                 self.activeStations.append(s)
             except:
                 pass
+
+    def checkPing(self, uri=''):
+        try:
+            with MyServerProxy('http://%s/' % uri, 1) as proxy:
+                proxy.ping()
+            return True
+        except:
+            # print "\n\n%s ping failed." % uri
+            # print traceback.format_exc()
+            return False
 
 
     def parseConfigs(self, filePath):
@@ -358,6 +495,26 @@ class MainWindow(QtGui.QDialog):
                 result[nname] = nvalue
         return result
 
+import socket
+
+class MyServerProxy:
+    def __init__(self, url, timeout=None):
+        self.__url = url
+        self.__timeout = timeout
+        self.__prevDefaultTimeout = None
+
+    def __enter__(self):
+        try:
+            if self.__timeout:
+                self.__prevDefaultTimeout = socket.getdefaulttimeout()
+                socket.setdefaulttimeout(self.__timeout)
+            proxy = xmlrpclib.Server(self.__url, allow_none=True)
+        except Exception as ex:
+            raise Exception("Unable create XMLRPC-proxy for url '%s': %s" % (self.__url, ex))
+        return proxy
+    def __exit__(self, type, value, traceback):
+        if self.__prevDefaultTimeout is None:
+            socket.setdefaulttimeout(self.__prevDefaultTimeout)
 
 if __name__ == '__main__':
 

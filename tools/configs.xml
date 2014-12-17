@@ -6,13 +6,14 @@
         <station name='Client 3'>10.207.215.96:1099</station>
         <station name='Client 4'>10.16.57.113:1099</station>
         <station name='Client 5'>10.207.215.133:1099</station>
-        <station name='Client 6'>10.16.48.209:1099</station>
+        <!-- <station name='Client 6'>10.16.48.209:1099</station> -->
         <station name='Client 7'>10.16.48.190:1099</station>
         <station name='Client 8'>10.16.48.192:1099</station>
         <station name='Client 9'>10.16.48.193:1099</station>
         <station name='Client 10'>10.16.48.194:1099</station>
-        <station name='Client 11'>10.16.48.198:1099</station>
+        <!-- <station name='Client 11'>10.16.48.198:1099</station>
         <station name='Client 12'>10.16.48.199:1099</station>
-        <station name='Client 13'>10.16.48.200:1099</station>
+        <station name='Client 13'>10.16.48.200:1099</station> -->
+        <station name='Client Linux 1'>10.207.215.82:1099</station>
     </stations>
 </configs>
