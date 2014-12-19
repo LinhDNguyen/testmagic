@@ -194,11 +194,19 @@ class StationControlWidget(QtGui.QWidget):
         self.btnUpgrade = QtGui.QPushButton("&Upgrade")
         self.btnUpgrade.setFixedWidth(80)
         self.btnUpgrade.setDefault(False)
+        self.btnTaskList = QtGui.QPushButton("Task list")
+        self.btnTaskList.setFixedWidth(80)
+        self.btnTaskList.setDefault(False)
+        self.btnKillTask = QtGui.QPushButton("Kill task")
+        self.btnKillTask.setFixedWidth(80)
+        self.btnKillTask.setDefault(False)
         lbCommand = QtGui.QLabel("&Command")
         lbCommand.setFixedHeight(15)
         lbCommand.setBuddy(self.txtCommand)
-        mainLayout.addWidget(lbCommand, 11, 0, 1, 5)
-        mainLayout.addWidget(self.btnClose, 11, 5)
+        mainLayout.addWidget(lbCommand, 11, 0, 1, 3)
+        mainLayout.addWidget(self.btnClose, 11, 3)
+        mainLayout.addWidget(self.btnTaskList, 11, 4)
+        mainLayout.addWidget(self.btnKillTask, 11, 5)
         mainLayout.addWidget(self.btnUpgrade, 11, 6)
         mainLayout.addWidget(self.btnGetAsync, 11, 7)
         mainLayout.addWidget(self.btnKillAsync, 11, 8)
@@ -270,21 +278,163 @@ class MyStationControl(QtGui.QWidget):
         self.widgetStationControl.btnGetAsync.released.connect(self.getAsyncStatus)
         self.widgetStationControl.btnKillAsync.released.connect(self.killAsyncProcess)
         self.widgetStationControl.btnUpgrade.released.connect(self.clientUpgrade)
+        self.widgetStationControl.btnTaskList.released.connect(self.getTaskList)
+        self.widgetStationControl.btnKillTask.released.connect(self.killClientTask)
 
     def test(self):
         print "TEST"
+
+    def cliKillTask(self, station=None, info={}):
+        # Wait for station IDLE
+        rpc = station._rpc
+        uri = station._uri
+
+        try:
+            if rpc.get_status() != 0:
+                time.sleep(1)
+            ret, out = rpc.kill_task(info)
+            s = ''
+            if ret:
+                s += "<div style='color: green'>==RET: %s</div><br />" % str(ret)
+            else:
+                s += "<div style='color: red'>==RET: %s</div><br />" % str(ret)
+                self._failCount += 1
+            s += "<div>==OUT: %s</div>" % out
+            self._threadlock.acquire(True)
+            self.log(station, s)
+            self._threadlock.release()
+        except:
+            s = "Station: %s\n" % station._uri
+            s += traceback.format_exc()
+            self.logError(s)
+            return
+
+    def killClientTask(self):
+        threads = []
+        self._failCount = 0
+        selectedStations = self.widgetStationSelect.getSelectedStations()
+        if len(selectedStations) == 0:
+            return
+        # Get username & password
+        taskname = ''
+        taskcmd = ''
+        text, ok = QtGui.QInputDialog.getText(self, 'Input Dialog',
+            'Task name you want to list:', text=taskname)
+        if ok and text.strip():
+            taskname = text.strip()
+        text, ok = QtGui.QInputDialog.getText(self, 'Input Dialog',
+            'Command of task %s:' % taskname, text=taskcmd)
+        if ok and text.strip():
+            taskcmd = text.strip()
+
+        if (not taskname) or (not taskcmd):
+            return
+
+        s = "<br />Kill client task:"
+        s += "<br />Task name: %s" % taskname
+        s += "<br />Command: %s" % taskcmd
+        # Append to text edit
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
+        self.widgetStationControl.txtLog.insertHtml(s)
+        info = {
+            'name': taskname,
+            'path': taskcmd,
+        }
+        for station in selectedStations:
+            thread = threading.Thread(target=self.cliKillTask, args=(station, info,))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # Summary
+        s = "<br /><div style='color:green'> ALL PASSED </div>"
+        if self._failCount:
+            s = "<br /><div style='color:red'> %d FAILED </div>" % self._failCount
+        s += "<br /><br />"
+        # Append to text edit
+        self.widgetStationControl.txtLog.insertHtml(s)
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
+
+    def cliTaskList(self, station=None, info={}):
+        # Wait for station IDLE
+        rpc = station._rpc
+        uri = station._uri
+
+        try:
+            if rpc.get_status() != 0:
+                time.sleep(1)
+            ret, out = rpc.get_tasks(info)
+            s = ''
+            if ret:
+                s += "<div style='color: green'>==RET: %s</div><br />" % str(ret)
+            else:
+                s += "<div style='color: red'>==RET: %s</div><br />" % str(ret)
+                self._failCount += 1
+            s += "<div>==OUT: %s</div>" % out
+            self._threadlock.acquire(True)
+            self.log(station, s)
+            self._threadlock.release()
+        except:
+            s = "Station: %s\n" % station._uri
+            s += traceback.format_exc()
+            self.logError(s)
+            return
+
+    def getTaskList(self):
+        threads = []
+        self._failCount = 0
+        selectedStations = self.widgetStationSelect.getSelectedStations()
+        if len(selectedStations) == 0:
+            return
+        # Get username & password
+        taskname = ''
+        text, ok = QtGui.QInputDialog.getText(self, 'Input Dialog',
+            'Task name you want to list:', text=taskname)
+        if ok and text.strip():
+            taskname = text.strip()
+
+        s = "<br />Get client task list:"
+        s += "<br />Task name: %s" % taskname
+        # Append to text edit
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
+        self.widgetStationControl.txtLog.insertHtml(s)
+        info = {
+            'name': taskname,
+        }
+        for station in selectedStations:
+            thread = threading.Thread(target=self.cliTaskList, args=(station, info,))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # Summary
+        s = "<br /><div style='color:green'> ALL PASSED </div>"
+        if self._failCount:
+            s = "<br /><div style='color:red'> %d FAILED </div>" % self._failCount
+        s += "<br /><br />"
+        # Append to text edit
+        self.widgetStationControl.txtLog.insertHtml(s)
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
 
     def cliUpgrade(self, station=None, info={}):
         # Wait for station IDLE
         rpc = station._rpc
         uri = station._uri
-        uid = info.get('uname', 'mqx_test')
-        pwd = info.get('passwd', 'Freescale3')
 
         try:
             if rpc.get_status() != 0:
                 time.sleep(1)
-            ret, out = rpc.self_restart({'uname': uid, 'passwd': pwd})
+            ret, out = rpc.self_restart(info)
             s = ''
             if ret:
                 s += "<div style='color: green'>==RET: %s</div><br />" % str(ret)
