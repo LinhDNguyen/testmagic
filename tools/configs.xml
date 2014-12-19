@@ -16,5 +16,6 @@
         <station name='Client 13'>10.16.48.200:1099</station> -->
 
         <station name='Client Linux 1'>10.207.215.82:1099</station>
+        <station name='Self client'>10.207.215.45:1099</station>
     </stations>
 </configs>

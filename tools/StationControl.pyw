@@ -191,11 +191,15 @@ class StationControlWidget(QtGui.QWidget):
         self.btnClose = QtGui.QPushButton("Cl&ose")
         self.btnClose.setFixedWidth(80)
         self.btnClose.setDefault(False)
+        self.btnUpgrade = QtGui.QPushButton("&Upgrade")
+        self.btnUpgrade.setFixedWidth(80)
+        self.btnUpgrade.setDefault(False)
         lbCommand = QtGui.QLabel("&Command")
         lbCommand.setFixedHeight(15)
         lbCommand.setBuddy(self.txtCommand)
-        mainLayout.addWidget(lbCommand, 11, 0, 1, 6)
-        mainLayout.addWidget(self.btnClose, 11, 6)
+        mainLayout.addWidget(lbCommand, 11, 0, 1, 5)
+        mainLayout.addWidget(self.btnClose, 11, 5)
+        mainLayout.addWidget(self.btnUpgrade, 11, 6)
         mainLayout.addWidget(self.btnGetAsync, 11, 7)
         mainLayout.addWidget(self.btnKillAsync, 11, 8)
         mainLayout.addWidget(self.btnClear, 11, 9)
@@ -265,9 +269,85 @@ class MyStationControl(QtGui.QWidget):
         self.widgetStationControl.txtCommand.returnPressed.connect(self.runHandler)
         self.widgetStationControl.btnGetAsync.released.connect(self.getAsyncStatus)
         self.widgetStationControl.btnKillAsync.released.connect(self.killAsyncProcess)
+        self.widgetStationControl.btnUpgrade.released.connect(self.clientUpgrade)
 
     def test(self):
         print "TEST"
+
+    def cliUpgrade(self, station=None, info={}):
+        # Wait for station IDLE
+        rpc = station._rpc
+        uri = station._uri
+        uid = info.get('uname', 'mqx_test')
+        pwd = info.get('passwd', 'Freescale3')
+
+        try:
+            if rpc.get_status() != 0:
+                time.sleep(1)
+            ret, out = rpc.self_restart({'uname': uid, 'passwd': pwd})
+            s = ''
+            if ret:
+                s += "<div style='color: green'>==RET: %s</div><br />" % str(ret)
+            else:
+                s += "<div style='color: red'>==RET: %s</div><br />" % str(ret)
+                self._failCount += 1
+            s += "<div>==OUT: %s</div>" % out
+            self._threadlock.acquire(True)
+            self.log(station, s)
+            self._threadlock.release()
+        except:
+            s = "Station: %s\n" % station._uri
+            s += traceback.format_exc()
+            self.logError(s)
+            return
+
+    def clientUpgrade(self):
+        threads = []
+        self._failCount = 0
+        selectedStations = self.widgetStationSelect.getSelectedStations()
+        if len(selectedStations) == 0:
+            return
+        # Get username & password
+        uname = 'mqx_test'
+        passwd = 'Freescale3'
+        text, ok = QtGui.QInputDialog.getText(self, 'Input Dialog',
+            'Enter username of these computer:', text=uname)
+        if ok and text.strip():
+            uname = text.strip()
+        text, ok = QtGui.QInputDialog.getText(self, 'Input Dialog',
+            'Enter password of %s:' % uname, text=passwd)
+        if ok and text.strip():
+            passwd = text.strip()
+
+        s = "<br />Restart Control client:"
+        s += "<br />Username: %s" % uname
+        s += "<br />Password: %s" % passwd
+        # Append to text edit
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
+        self.widgetStationControl.txtLog.insertHtml(s)
+        info = {
+            'uname': uname,
+            'passwd': passwd,
+        }
+        for station in selectedStations:
+            thread = threading.Thread(target=self.cliUpgrade, args=(station, info,))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # Summary
+        s = "<br /><div style='color:green'> ALL PASSED </div>"
+        if self._failCount:
+            s = "<br /><div style='color:red'> %d FAILED </div>" % self._failCount
+        s += "<br /><br />"
+        # Append to text edit
+        self.widgetStationControl.txtLog.insertHtml(s)
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
 
     def clearLog(self):
         self.widgetStationControl.txtLog.clear()
@@ -300,6 +380,9 @@ class MyStationControl(QtGui.QWidget):
         s = "<br /><div id='OutputLog' style='color:red'>%s</div>" % content.replace('\n', "<br />")
 
         # Append to text edit
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
         self.widgetStationControl.txtLog.insertHtml(s)
         c = self.widgetStationControl.txtLog.textCursor();
         c.movePosition(QtGui.QTextCursor.End);
@@ -348,6 +431,9 @@ class MyStationControl(QtGui.QWidget):
             return
         s = "<br />Kill async processes"
         # Append to text edit
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
         self.widgetStationControl.txtLog.insertHtml(s)
         for station in selectedStations:
             thread = threading.Thread(target=self.killAsync, args=(station,))
@@ -400,6 +486,9 @@ class MyStationControl(QtGui.QWidget):
             return
         s = "<br />Get async status"
         # Append to text edit
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
         self.widgetStationControl.txtLog.insertHtml(s)
         for station in selectedStations:
             thread = threading.Thread(target=self.getAsync, args=(station,))
@@ -459,6 +548,9 @@ class MyStationControl(QtGui.QWidget):
             v = str(info[k])
             s += "<br />   %s = %s" % (k, v)
         # Append to text edit
+        c = self.widgetStationControl.txtLog.textCursor();
+        c.movePosition(QtGui.QTextCursor.End);
+        self.widgetStationControl.txtLog.setTextCursor(c);
         self.widgetStationControl.txtLog.insertHtml(s)
         for station in stations:
             thread = threading.Thread(target=self.runCMD, args=(station, info, timeout,))
