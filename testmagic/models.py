@@ -132,25 +132,25 @@ class TestCase(models.Model):
         return str(self.tc_name)
 
 
-class TestGroup(models.Model):
-    tg_id = models.AutoField(primary_key=True)
-    tg_name = models.TextField()
-    tg_specific_configs = models.TextField(blank=True)
+class TestSuite(models.Model):
+    ts_id = models.AutoField(primary_key=True)
+    ts_name = models.TextField()
+    ts_specific_configs = models.TextField(blank=True)
 
     def __str__(self):
-        return str(self.tg_name)
+        return str(self.ts_name)
 
 
-class TestCaseGroup(object):
+class TestCaseSuite(object):
     """Group of test case"""
 
-    def __init__(self, test_cases=[], test_group=None):
-        """Constructor for TestCaseGroup"""
+    def __init__(self, test_cases=[], test_suite=None):
+        """Constructor for TestCaseSuite"""
         self._test_cases = test_cases
-        self._test_group = test_group
-        self._group_id = None
+        self._test_suite = test_suite
+        self._suite_id = None
         self._case_ids = []
-        self._run_count = 0
+        self._run_suite = 0
 
 
 class TestPlan(models.Model):
@@ -173,12 +173,12 @@ class TestPlan(models.Model):
 
     def loadSchedule(self):
         '''Load all test group into schedule array'''
-        for plangroup in self.plangroups:
-            group = TestCaseGroup()
+        for plangroup in self.plansuites:
+            group = TestCaseSuite()
             group._group_id = plangroup.id
-            for tc in plangroup.testgroup.test_case_groups:
+            for tc in plangroup.testgroup.test_case_suites:
                 group._case_ids.append(tc.tc_id)
-            self._schedule.append(group)            
+            self._schedule.append(group)
 
 
 class Session(models.Model):
@@ -193,9 +193,9 @@ class Session(models.Model):
         return str(self.s_name)
 
 
-class TestCaseInGroup(models.Model):
-    test_case = models.ForeignKey(TestCase, related_name='test_case_groups')
-    test_group = models.ForeignKey(TestGroup, related_name='test_case_groups')
+class TestCaseInSuite(models.Model):
+    test_case = models.ForeignKey(TestCase, related_name='  ')
+    test_suite = models.ForeignKey(TestSuite, related_name='test_case_suites')
     tcg_order = models.IntegerField()
     tcg_depends = models.TextField(blank=True)
 
@@ -210,9 +210,9 @@ class TestResult(models.Model):
     computer_compiler = models.ForeignKey(ComputerCompiler, related_name='test_results')
 
 
-class TestPlanGroup(models.Model):
-    test_plan = models.ForeignKey(TestPlan, related_name='plangroups')
-    test_group = models.ForeignKey(TestGroup, related_name='plangroups')
+class TestPlanSuite(models.Model):
+    test_plan = models.ForeignKey(TestPlan, related_name='plansuites')
+    test_group = models.ForeignKey(TestSuite, related_name='plansuites')
     tpg_order = models.IntegerField()
     tpg_depends = models.TextField(blank=True)
 
