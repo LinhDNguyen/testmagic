@@ -29,13 +29,11 @@ class Computer(models.Model):
     cp_name = models.TextField()
     cp_uri = models.TextField()
     cp_source_dir = models.TextField(blank=True)
-    cp_com_port = models.IntegerField(blank=True, null=True)
-    cp_peri_com_port = models.IntegerField(blank=True, null=True)
     cp_state = models.IntegerField()
     cp_is_active = models.IntegerField()
-    cp_doing = models.TextField(blank=True)
     cp_is_server = models.IntegerField()
     cp_specific_configs = models.TextField(blank=True)
+    cp_doing = models.TextField(blank=True)
     compilers = models.ManyToManyField(Compiler, through='ComputerCompiler')
 
     def __str__(self):
@@ -160,7 +158,7 @@ class TestPlan(models.Model):
     tp_status = models.IntegerField()
     tp_desc = models.TextField(blank=True)
     tp_mail_list = models.TextField(blank=True)
-    tp_specific_config = models.TextField(blank=True)
+    tp_specific_configs = models.TextField(blank=True)
     _connection_name = ''
     _registered_slave = []
     _schedule = []
@@ -212,7 +210,7 @@ class TestResult(models.Model):
 
 class TestPlanSuite(models.Model):
     test_plan = models.ForeignKey(TestPlan, related_name='plansuites')
-    test_group = models.ForeignKey(TestSuite, related_name='plansuites')
+    test_suite = models.ForeignKey(TestSuite, related_name='plansuites')
     tpg_order = models.IntegerField()
     tpg_depends = models.TextField(blank=True)
 
